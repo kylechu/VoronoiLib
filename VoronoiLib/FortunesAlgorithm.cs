@@ -14,16 +14,16 @@ namespace VoronoiLib
 
         public static void Run(List<FortuneSite> sites, PoolLinkedList<VEdge> edges, double minX, double minY, double maxX, double maxY)
         {
-            eventQueue.Clear();
+            eventQueue.Initialize(5 * sites.Count);
+            beachLine.Clear();
+            deleted.Clear();
+
             foreach (var s in sites)
             {
                 var fEvent = ObjectPool<FortuneSiteEvent>.Get();
                 fEvent.Initialize(s);
                 eventQueue.Insert(fEvent);
             }
-            //init tree
-            beachLine.Clear();
-            deleted.Clear();
 
             //init edge list
             while (eventQueue.Count != 0)

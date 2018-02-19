@@ -5,18 +5,26 @@ namespace VoronoiLib.Structures
 {
     public class MinHeap<T> where T : IComparable<T>
     {
-        private readonly T[] items;
-        public int Capacity { get; }
+        private T[] items { get; set; }
+        public int Capacity { get; private set; }
         public int Count { get; private set; }
 
         public MinHeap(int capacity)
+        {
+            Initialize(capacity);
+        }
+
+        public void Initialize(int capacity)
         {
             if (capacity < 2)
             {
                 capacity = 2;
             }
-            Capacity = capacity;
-            items = new T[Capacity];
+            if (capacity > Capacity)
+            {
+                Capacity = capacity;
+                items = new T[Capacity];
+            }
             Count = 0;
         }
 
