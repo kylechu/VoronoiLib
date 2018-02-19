@@ -2,11 +2,11 @@
 {
     internal class FortuneCircleEvent : FortuneEvent
     {
-        internal VPoint Lowest { get; }
-        internal double YCenter { get; }
-        internal RBTreeNode<BeachSection> ToDelete { get; }
+        internal VPoint Lowest { get; private set; }
+        internal double YCenter { get; private set; }
+        internal RBTreeNode<BeachSection> ToDelete { get; private set; }
 
-        internal FortuneCircleEvent(VPoint lowest, double yCenter, RBTreeNode<BeachSection> toDelete)
+        public void Initialize(VPoint lowest, double yCenter, RBTreeNode<BeachSection> toDelete)
         {
             Lowest = lowest;
             YCenter = yCenter;

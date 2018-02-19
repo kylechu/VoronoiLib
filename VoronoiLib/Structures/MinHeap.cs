@@ -20,6 +20,11 @@ namespace VoronoiLib.Structures
             Count = 0;
         }
 
+        public void Clear()
+        {
+            Count = 0;
+        }
+
         public bool Insert(T obj)
         {
             if (Count == Capacity)

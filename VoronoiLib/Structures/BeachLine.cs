@@ -5,28 +5,34 @@ namespace VoronoiLib.Structures
 {
     internal class BeachSection
     {
-        internal FortuneSite Site { get;}
+        internal FortuneSite Site { get; private set; }
         internal VEdge Edge { get; set; }
         //NOTE: this will change
         internal FortuneCircleEvent CircleEvent { get; set; }
 
-        internal BeachSection(FortuneSite site)
+        public void Initialize(FortuneSite site)
         {
             Site = site;
+            Edge = null;
             CircleEvent = null;
         }
     }
 
     internal class BeachLine
     {
-        private readonly RBTree<BeachSection> beachLine;
+        private RBTree<BeachSection> beachLine;
 
         internal BeachLine()
         {
             beachLine = new RBTree<BeachSection>();
         }
 
-        internal void AddBeachSection(FortuneSiteEvent siteEvent, MinHeap<FortuneEvent> eventQueue, HashSet<FortuneCircleEvent> deleted, LinkedList<VEdge> edges)
+        internal void Clear()
+        {
+            beachLine.Clear(ObjectPool<BeachSection>.Recycle);
+        }
+
+        internal void AddBeachSection(FortuneSiteEvent siteEvent, MinHeap<FortuneEvent> eventQueue, HashSet<FortuneCircleEvent> deleted, PoolLinkedList<VEdge> edges)
         {
             var site = siteEvent.Site;
             var x = site.X;
@@ -92,7 +98,8 @@ namespace VoronoiLib.Structures
 
             //our goal is to insert the new node between the
             //left and right sections
-            var section = new BeachSection(site);
+            var section = ObjectPool<BeachSection>.Get();
+            section.Initialize(site);
 
             //left section could be null, in which case this node is the first
             //in the tree
@@ -120,7 +127,8 @@ namespace VoronoiLib.Structures
 
                 //we leave the existing arc as the left section in the tree
                 //however we need to insert the right section defined by the arc
-                var copy = new BeachSection(leftSection.Data.Site);
+                var copy = ObjectPool<BeachSection>.Get();
+                copy.Initialize(leftSection.Data.Site);
                 rightSection = beachLine.InsertSuccessor(newSection, copy);
 
                 //grab the projection of this site onto the parabola
@@ -128,8 +136,10 @@ namespace VoronoiLib.Structures
                 var intersection = new VPoint(x, y);
 
                 //create the two half edges corresponding to this intersection
-                var leftEdge = new VEdge(intersection, site, leftSection.Data.Site);
-                var rightEdge = new VEdge(intersection, leftSection.Data.Site, site);
+                var leftEdge = ObjectPool<VEdge>.Get();
+                leftEdge.Initialize(intersection, site, leftSection.Data.Site);
+                var rightEdge = ObjectPool<VEdge>.Get();
+                rightEdge.Initialize(intersection, leftSection.Data.Site, site);
                 leftEdge.Neighbor = rightEdge;
 
                 //put the edge in the list
@@ -154,8 +164,10 @@ namespace VoronoiLib.Structures
             else if (leftSection != null && rightSection == null)
             {
                 var start = new VPoint((leftSection.Data.Site.X + site.X)/ 2, double.MinValue);
-                var infEdge = new VEdge(start, leftSection.Data.Site, site);
-                var newEdge = new VEdge(start, site, leftSection.Data.Site);
+                var infEdge = ObjectPool<VEdge>.Get();
+                infEdge.Initialize(start, leftSection.Data.Site, site);
+                var newEdge = ObjectPool<VEdge>.Get();
+                newEdge.Initialize(start, site, leftSection.Data.Site);
 
                 newEdge.Neighbor = infEdge;
                 edges.AddFirst(newEdge);
@@ -211,8 +223,10 @@ namespace VoronoiLib.Structures
                 rightSection.Data.Edge.End = vertex;
 
                 //next we create a two new edges
-                newSection.Data.Edge = new VEdge(vertex, site, leftSection.Data.Site);
-                rightSection.Data.Edge = new VEdge(vertex, rightSection.Data.Site, site);
+                newSection.Data.Edge = ObjectPool<VEdge>.Get();
+                newSection.Data.Edge.Initialize(vertex, site, leftSection.Data.Site);
+                rightSection.Data.Edge = ObjectPool<VEdge>.Get();
+                rightSection.Data.Edge.Initialize(vertex, rightSection.Data.Site, site);
 
                 edges.AddFirst(newSection.Data.Edge);
                 edges.AddFirst(rightSection.Data.Edge);
@@ -229,7 +243,9 @@ namespace VoronoiLib.Structures
             }
         }
 
-        internal void RemoveBeachSection(FortuneCircleEvent circle, MinHeap<FortuneEvent> eventQueue, HashSet<FortuneCircleEvent> deleted, LinkedList<VEdge> edges)
+        private List<RBTreeNode<BeachSection>> toBeRemoved = new List<RBTreeNode<BeachSection>>();
+
+        internal void RemoveBeachSection(FortuneCircleEvent circle, MinHeap<FortuneEvent> eventQueue, HashSet<FortuneCircleEvent> deleted, PoolLinkedList<VEdge> edges)
         {
             var section = circle.ToDelete;
             var x = circle.X;
@@ -237,7 +253,7 @@ namespace VoronoiLib.Structures
             var vertex = new VPoint(x, y);
 
             //multiple edges could end here
-            var toBeRemoved = new List<RBTreeNode<BeachSection>>();
+            //var toBeRemoved = new List<RBTreeNode<BeachSection>>();
 
             //look left
             var prev = section.Previous;
@@ -286,7 +302,8 @@ namespace VoronoiLib.Structures
 
 
             //create a new edge with start point at the vertex and assign it to next
-            var newEdge = new VEdge(vertex, next.Data.Site, prev.Data.Site);
+            var newEdge = ObjectPool<VEdge>.Get();
+            newEdge.Initialize(vertex, next.Data.Site, prev.Data.Site);
             next.Data.Edge = newEdge;
             edges.AddFirst(newEdge);
 
@@ -296,13 +313,19 @@ namespace VoronoiLib.Structures
             
             //remove the sectionfrom the tree
             beachLine.RemoveNode(section);
+            ObjectPool<BeachSection>.Recycle(section.Data);
+            ObjectPool<RBTreeNode<BeachSection>>.Recycle(section);
             foreach (var remove in toBeRemoved)
             {
                 beachLine.RemoveNode(remove);
+                ObjectPool<BeachSection>.Recycle(remove.Data);
+                ObjectPool<RBTreeNode<BeachSection>>.Recycle(remove);
             }
 
             CheckCircle(prev, eventQueue);
             CheckCircle(next, eventQueue);
+
+            toBeRemoved.Clear();
         }
 
         private static double LeftBreakpoint(RBTreeNode<BeachSection> node, double directrix)
@@ -384,7 +407,8 @@ namespace VoronoiLib.Structures
             //add back offset
             var ycenter = y + by;
             //y center is off
-            var circleEvent = new FortuneCircleEvent(
+            var circleEvent = ObjectPool<FortuneCircleEvent>.Get();
+            circleEvent.Initialize(
                 new VPoint(x + bx, ycenter + Math.Sqrt(x * x + y * y)),
                 ycenter, section
             );

@@ -1,5 +1,7 @@
 ﻿// credit https://github.com/mdally/Voronoi/blob/master/src/RBTree.h MIT LICENSE
 
+using System;
+
 namespace VoronoiLib.Structures
 {
     public class RBTreeNode<T>
@@ -15,9 +17,15 @@ namespace VoronoiLib.Structures
 
         internal bool Red { get; set; }
 
-        internal RBTreeNode ()
+        public void Initialize(T data)
         {
-            
+            Data = data;
+            Left = null;
+            Right = null;
+            Parent = null;
+            Previous = null;
+            Next = null;
+            Red = false;
         }
     }
 
@@ -25,9 +33,35 @@ namespace VoronoiLib.Structures
     {
         public RBTreeNode<T> Root { get; private set; }
 
+        public void Clear(Action<T> disposeElement = null)
+        {
+            void ClearNode(RBTreeNode<T> node)
+            {
+                if (node.Left != null)
+                {
+                    ClearNode(node.Left);
+                }
+                if (node.Right != null)
+                {
+                    ClearNode(node.Right);
+                }
+                if (node.Data != null)
+                {
+                    disposeElement?.Invoke(node.Data);
+                }
+                ObjectPool<RBTreeNode<T>>.Recycle(node);
+            }
+            if (Root != null)
+            {
+                ClearNode(Root);
+                Root = null;
+            }
+        }
+
         public RBTreeNode<T> InsertSuccessor(RBTreeNode<T> node, T successorData)
         {
-            var successor = new RBTreeNode<T> {Data = successorData};
+            var successor = ObjectPool<RBTreeNode<T>>.Get();
+            successor.Initialize(successorData);
 
             RBTreeNode<T> parent;
 

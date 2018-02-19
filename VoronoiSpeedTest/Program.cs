@@ -22,6 +22,7 @@ namespace VoronoiSpeedTest
             var watch = new Stopwatch();
             var times = new long[MAX_N, SAMPLES];
 
+            var output = new PoolLinkedList<VEdge>();
     
             for (var point = 1; point * INC <= MAX_N; point++)
             {
@@ -33,8 +34,16 @@ namespace VoronoiSpeedTest
                     watch.Reset();
                     var points = GenPoints(numPoints, r);
                     watch.Start();
-                    FortunesAlgorithm.Run(points, 0, 0, WIDTH, HEIGHT);
+                    FortunesAlgorithm.Run(points, output, 0, 0, WIDTH, HEIGHT);
                     watch.Stop();
+                    output.Clear((edge) =>
+                    {
+                        if (edge.Neighbor != null)
+                        {
+                            ObjectPool<VEdge>.Recycle(edge.Neighbor);
+                        }
+                        ObjectPool<VEdge>.Recycle(edge);
+                    });
                     times[point - 1, sample - 1] = watch.ElapsedMilliseconds;
                 }
             }
@@ -70,7 +79,9 @@ namespace VoronoiSpeedTest
             var points = new List<FortuneSite>();
             for (var i = 0; i < n; i++)
             {
-                points.Add(new FortuneSite(r.NextDouble() * WIDTH, r.NextDouble()* HEIGHT));
+                var site = ObjectPool<FortuneSite>.Get();
+                site.Initialize(r.NextDouble() * WIDTH, r.NextDouble() * HEIGHT, 0);
+                points.Add(site);
             }
 
             //uniq the points
@@ -114,6 +125,10 @@ namespace VoronoiSpeedTest
                 {
                     unique.Add(point);
                     last = point;
+                }
+                else
+                {
+                    ObjectPool<FortuneSite>.Recycle(point);
                 }
             }
             return unique;

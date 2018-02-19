@@ -18,7 +18,7 @@ namespace VoronoiDemo
         private Texture2D t;
         private SpriteFont sf;
         private List<FortuneSite> points;
-        private LinkedList<VEdge> edges;
+        private PoolLinkedList<VEdge> edges;
         private List<Tuple<Vector2, Vector2>> delaunay;
         private KeyboardState keyboard;
         private MouseState mouse;
@@ -46,7 +46,7 @@ namespace VoronoiDemo
             graphics.ToggleFullScreen();
             IsMouseVisible = true;
             points = new List<FortuneSite>();
-            edges = new LinkedList<VEdge>();
+            edges = new PoolLinkedList<VEdge>();
             delaunay = new List<Tuple<Vector2, Vector2>>();
             keyboard = Keyboard.GetState();
             mouse = Mouse.GetState();
@@ -54,6 +54,15 @@ namespace VoronoiDemo
             help = new Rectangle(0, 0, 285, 180);
             helpColor = new Color(Color.Black, (float).5);
             base.Initialize();
+        }
+
+        private void RecycleEdge(VEdge edge)
+        {
+            if (edge.Neighbor != null)
+            {
+                ObjectPool<VEdge>.Recycle(edge.Neighbor);
+            }
+            ObjectPool<VEdge>.Recycle(edge);
         }
         
         protected override void LoadContent()
@@ -104,9 +113,11 @@ namespace VoronoiDemo
             spriteBatch.Begin();
             if (showVoronoi)
             {
-                foreach (var edge in edges)
+                var edge = edges.First;
+                while (edge != null)
                 {
-                    DrawLine(spriteBatch, edge);
+                    DrawLine(spriteBatch, edge.Value);
+                    edge = edge.Next;
                 }
             }
             if (showDelaunay)
@@ -129,8 +140,12 @@ namespace VoronoiDemo
 
         private void ClearPoints()
         {
+            foreach (var point in points)
+            {
+                ObjectPool<FortuneSite>.Recycle(point);
+            }
             points.Clear();
-            edges.Clear();
+            edges.Clear(RecycleEdge);
             delaunay.Clear();
         }
 
@@ -139,29 +154,39 @@ namespace VoronoiDemo
             var newPoints = new List<FortuneSite>();
             if (points.Count > 0)
             {
-                newPoints.AddRange(points.Select(point => new FortuneSite(point.X, point.Y)));
+                newPoints.AddRange(points.Select(point => {
+                    var site = ObjectPool<FortuneSite>.Get();
+                    site.Initialize(point.X, point.Y, 0);
+                    return site;
+                }));
             }
-            
-            newPoints.Add(new FortuneSite(x, y));
+
+            var newSite = ObjectPool<FortuneSite>.Get();
+            newSite.Initialize(x, y);
+            newPoints.Add(newSite);
+
+            ClearPoints();
             points = newPoints;
 
-            edges = FortunesAlgorithm.Run(points, 0, 0, graphics.GraphicsDevice.Viewport.Width, graphics.GraphicsDevice.Viewport.Height);
+            FortunesAlgorithm.Run(points, edges, 0, 0, graphics.GraphicsDevice.Viewport.Width, graphics.GraphicsDevice.Viewport.Height);
 
             GenerateDelaunay();
         }
 
         private void GeneratePoints()
         {
-            points.Clear();
+            ClearPoints();
 
             //generate points
             var w = graphics.GraphicsDevice.Viewport.Width;
             var h = graphics.GraphicsDevice.Viewport.Height;
             for (var i = 0; i < GEN_COUNT; i++)
             {
-                points.Add(new FortuneSite(
+                var site = ObjectPool<FortuneSite>.Get();
+                site.Initialize(
                     r.Next((int)(w / 20.0), (int)(19 * w / 20.0)),
-                    r.Next((int)(h / 20.0), (int)(19 * h / 20.0))));
+                    r.Next((int)(h / 20.0), (int)(19 * h / 20.0)));
+                points.Add(site);
             }
 
             //uniq the points
@@ -195,7 +220,7 @@ namespace VoronoiDemo
             }
             points = unique;
 
-            edges = FortunesAlgorithm.Run(points, 0, 0, graphics.GraphicsDevice.Viewport.Width, graphics.GraphicsDevice.Viewport.Height);
+            FortunesAlgorithm.Run(points, edges, 0, 0, graphics.GraphicsDevice.Viewport.Width, graphics.GraphicsDevice.Viewport.Height);
 
             GenerateDelaunay();
             //convert ajd list to edge list... edges get double added
@@ -227,10 +252,15 @@ namespace VoronoiDemo
         {
             var newPoints = new List<FortuneSite>(points.Count);
             if (points.Count > 0)
-                newPoints.AddRange(points.Select(point => new FortuneSite(point.X + 5*r.NextDouble() - 2.5, point.Y + 5*r.NextDouble() - 2.5)));
+                newPoints.AddRange(points.Select(point => {
+                    var site = ObjectPool<FortuneSite>.Get();
+                    site.Initialize(point.X + 5 * r.NextDouble() - 2.5, point.Y + 5 * r.NextDouble() - 2.5);
+                    return site;
+                }));
+            ClearPoints();
             points = newPoints;
 
-            edges = FortunesAlgorithm.Run(points, 0, 0, graphics.GraphicsDevice.Viewport.Width, graphics.GraphicsDevice.Viewport.Height);
+            FortunesAlgorithm.Run(points, edges, 0, 0, graphics.GraphicsDevice.Viewport.Width, graphics.GraphicsDevice.Viewport.Height);
 
             GenerateDelaunay();
         }

@@ -4,20 +4,24 @@
     {
         public VPoint Start { get; internal set; }
         public VPoint End { get; internal set; }
-        public FortuneSite Left { get; }
-        public FortuneSite Right { get; }
-        internal double SlopeRise { get; }
-        internal double SlopeRun { get; }
-        internal double? Slope { get; }
-        internal double? Intercept { get; }
+        public bool IsClipped { get; internal set; }
+        public FortuneSite Left { get; private set; }
+        public FortuneSite Right { get; private set; }
+        internal double SlopeRise { get; private set; }
+        internal double SlopeRun { get; private set; }
+        internal double? Slope { get; private set; }
+        internal double? Intercept { get; private set; }
 
         public VEdge Neighbor { get; internal set; }
 
-        internal VEdge(VPoint start, FortuneSite left, FortuneSite right)
+        public void Initialize(VPoint start, FortuneSite left, FortuneSite right)
         {
             Start = start;
+            End = VPoint.Default;
             Left = left;
             Right = right;
+            IsClipped = false;
+            Neighbor = null;
             
             //for bounding box edges
             if (left == null || right == null)

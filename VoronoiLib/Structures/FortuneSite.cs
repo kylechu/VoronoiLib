@@ -4,19 +4,22 @@ namespace VoronoiLib.Structures
 {
     public class FortuneSite
     {
-        public double X { get; }
-        public double Y { get; }
+        public double X { get; private set; }
+        public double Y { get; private set; }
 
-        public List<VEdge> Cell { get; private set; }
+        public int Id { get; private set; }
 
-        public List<FortuneSite> Neighbors { get; private set; }
+        public List<VEdge> Cell { get; } = new List<VEdge>();
 
-        public FortuneSite(double x, double y)
+        public List<FortuneSite> Neighbors { get; } = new List<FortuneSite>();
+
+        public void Initialize(double x, double y, int id = -1)
         {
+            Id = id;
             X = x;
             Y = y;
-            Cell = new List<VEdge>();
-            Neighbors = new List<FortuneSite>();
+            Cell.Clear();
+            Neighbors.Clear();
         }
     }
 }

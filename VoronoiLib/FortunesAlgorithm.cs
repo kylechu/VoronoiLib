@@ -6,24 +6,34 @@ namespace VoronoiLib
 {
     public static class FortunesAlgorithm
     {
-        public static LinkedList<VEdge> Run(List<FortuneSite> sites, double minX, double minY, double maxX, double maxY)
+        private static BeachLine beachLine = new BeachLine();
+        private static HashSet<FortuneCircleEvent> deleted = new HashSet<FortuneCircleEvent>();
+        private static MinHeap<FortuneEvent> eventQueue = new MinHeap<FortuneEvent>(160);
+
+        private static List<VPoint> candidates = new List<VPoint>();
+
+        public static void Run(List<FortuneSite> sites, PoolLinkedList<VEdge> edges, double minX, double minY, double maxX, double maxY)
         {
-            var eventQueue = new MinHeap<FortuneEvent>(5*sites.Count);
+            eventQueue.Clear();
             foreach (var s in sites)
             {
-                eventQueue.Insert(new FortuneSiteEvent(s));
+                var fEvent = ObjectPool<FortuneSiteEvent>.Get();
+                fEvent.Initialize(s);
+                eventQueue.Insert(fEvent);
             }
             //init tree
-            var beachLine = new BeachLine();
-            var edges = new LinkedList<VEdge>();
-            var deleted = new HashSet<FortuneCircleEvent>();
+            beachLine.Clear();
+            deleted.Clear();
 
             //init edge list
             while (eventQueue.Count != 0)
             {
                 var fEvent = eventQueue.Pop();
                 if (fEvent is FortuneSiteEvent)
-                    beachLine.AddBeachSection((FortuneSiteEvent) fEvent, eventQueue, deleted, edges);
+                {
+                    beachLine.AddBeachSection((FortuneSiteEvent)fEvent, eventQueue, deleted, edges);
+                    ObjectPool<FortuneSiteEvent>.Recycle((FortuneSiteEvent) fEvent);
+                }
                 else
                 {
                     if (deleted.Contains((FortuneCircleEvent) fEvent))
@@ -34,6 +44,7 @@ namespace VoronoiLib
                     {
                         beachLine.RemoveBeachSection((FortuneCircleEvent) fEvent, eventQueue, deleted, edges);
                     }
+                    ObjectPool<FortuneCircleEvent>.Recycle((FortuneCircleEvent) fEvent);
                 }
             }
             
@@ -47,11 +58,17 @@ namespace VoronoiLib
 
                 var valid = ClipEdge(edge, minX, minY, maxX, maxY);
                 if (!valid)
+                {
                     edges.Remove(edgeNode);
+                    if (edgeNode.Value.Neighbor != null)
+                    {
+                        ObjectPool<VEdge>.Recycle(edgeNode.Value.Neighbor);
+                    }
+                    ObjectPool<VEdge>.Recycle(edgeNode.Value);
+                }
                 //advance
                 edgeNode = next;
             }
-            return edges;
         }
 
         //combination of personal ray clipping alg and cohen sutherland
@@ -60,7 +77,7 @@ namespace VoronoiLib
             var accept = false;
 
             //if its a ray
-            if (edge.End == null)
+            if (edge.End.Equals(VPoint.Default))
             {
                 accept = ClipRay(edge, minX, minY, maxX, maxY);
             }
@@ -105,6 +122,7 @@ namespace VoronoiLib
                         y = edge.Start.Y + (edge.End.Y - edge.Start.Y)*(minX - edge.Start.X)/(edge.End.X - edge.Start.X);
                         x = minX;
                     }
+                    edge.IsClipped = true;
 
                     if (outcode == start)
                     {
@@ -234,7 +252,6 @@ namespace VoronoiLib
             var rightY = new VPoint(maxX, CalcY(edge.Slope.Value, maxX, edge.Intercept.Value));
 
             //reject intersections not within bounds
-            var candidates = new List<VPoint>();
             if (Within(topX.X, minX, maxX))
                 candidates.Add(topX);
             if (Within(bottomX.X, minX, maxX))
@@ -279,8 +296,10 @@ namespace VoronoiLib
             if (candidates.Count == 1)
                 edge.End = candidates[0];
 
+            candidates.Clear();
+
             //there were no candidates
-            return edge.End != null;
+            return !edge.End.Equals(VPoint.Default);
         }
 
         private static bool Within(double x, double a, double b)
