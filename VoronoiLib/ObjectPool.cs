@@ -12,19 +12,22 @@ namespace VoronoiLib
 
         public static T Get()
         {
-            if (_pool.Count > 0)
+            lock (_pool)
             {
-                return _pool.Dequeue();
+                if (_pool.Count > 0)
+                {
+                    return _pool.Dequeue();
+                }
             }
-            else
-            {
-                return new T();
-            }
+            return new T();
         }
 
         public static void Recycle(T obj)
         {
-            _pool.Enqueue(obj);
+            lock (_pool)
+            {
+                _pool.Enqueue(obj);
+            }
         }
     }
 }

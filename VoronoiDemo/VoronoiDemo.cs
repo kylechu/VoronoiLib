@@ -26,6 +26,7 @@ namespace VoronoiDemo
             showVoronoi = true,
             showDelaunay = true,
             showHelp = true;
+        private FortunesAlgorithm fortune;
 
         private Random r;
         private Rectangle help;
@@ -50,6 +51,7 @@ namespace VoronoiDemo
             delaunay = new List<Tuple<Vector2, Vector2>>();
             keyboard = Keyboard.GetState();
             mouse = Mouse.GetState();
+            fortune = new FortunesAlgorithm();
             r = new Random(100);
             help = new Rectangle(0, 0, 285, 180);
             helpColor = new Color(Color.Black, (float).5);
@@ -168,7 +170,7 @@ namespace VoronoiDemo
             ClearPoints();
             points = newPoints;
 
-            FortunesAlgorithm.Run(points, edges, 0, 0, graphics.GraphicsDevice.Viewport.Width, graphics.GraphicsDevice.Viewport.Height);
+            fortune.Run(points, edges, 0, 0, graphics.GraphicsDevice.Viewport.Width, graphics.GraphicsDevice.Viewport.Height);
 
             GenerateDelaunay();
         }
@@ -220,7 +222,7 @@ namespace VoronoiDemo
             }
             points = unique;
 
-            FortunesAlgorithm.Run(points, edges, 0, 0, graphics.GraphicsDevice.Viewport.Width, graphics.GraphicsDevice.Viewport.Height);
+            fortune.Run(points, edges, 0, 0, graphics.GraphicsDevice.Viewport.Width, graphics.GraphicsDevice.Viewport.Height);
 
             GenerateDelaunay();
             //convert ajd list to edge list... edges get double added
@@ -260,7 +262,7 @@ namespace VoronoiDemo
             ClearPoints();
             points = newPoints;
 
-            FortunesAlgorithm.Run(points, edges, 0, 0, graphics.GraphicsDevice.Viewport.Width, graphics.GraphicsDevice.Viewport.Height);
+            fortune.Run(points, edges, 0, 0, graphics.GraphicsDevice.Viewport.Width, graphics.GraphicsDevice.Viewport.Height);
 
             GenerateDelaunay();
         }

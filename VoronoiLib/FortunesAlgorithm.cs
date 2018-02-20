@@ -4,15 +4,15 @@ using VoronoiLib.Structures;
 
 namespace VoronoiLib
 {
-    public static class FortunesAlgorithm
+    public class FortunesAlgorithm
     {
-        private static BeachLine beachLine = new BeachLine();
-        private static HashSet<FortuneCircleEvent> deleted = new HashSet<FortuneCircleEvent>();
-        private static MinHeap<FortuneEvent> eventQueue = new MinHeap<FortuneEvent>(160);
+        private BeachLine beachLine = new BeachLine();
+        private HashSet<FortuneCircleEvent> deleted = new HashSet<FortuneCircleEvent>();
+        private MinHeap<FortuneEvent> eventQueue = new MinHeap<FortuneEvent>(160);
 
-        private static List<VPoint> candidates = new List<VPoint>();
+        private List<VPoint> candidates = new List<VPoint>();
 
-        public static void Run(List<FortuneSite> sites, PoolLinkedList<VEdge> edges, double minX, double minY, double maxX, double maxY)
+        public void Run(List<FortuneSite> sites, PoolLinkedList<VEdge> edges, double minX, double minY, double maxX, double maxY)
         {
             eventQueue.Initialize(5 * sites.Count);
             beachLine.Clear();
@@ -72,7 +72,7 @@ namespace VoronoiLib
         }
 
         //combination of personal ray clipping alg and cohen sutherland
-        private static bool ClipEdge(VEdge edge, double minX, double minY, double maxX, double maxY)
+        private bool ClipEdge(VEdge edge, double minX, double minY, double maxX, double maxY)
         {
             var accept = false;
 
@@ -177,7 +177,7 @@ namespace VoronoiLib
             return code;
         }
 
-        private static bool ClipRay(VEdge edge, double minX, double minY, double maxX, double maxY)
+        private bool ClipRay(VEdge edge, double minX, double minY, double maxX, double maxY)
         {
             var start = edge.Start;
             //horizontal ray

@@ -21,6 +21,7 @@ namespace VoronoiSpeedTest
             var r = new Random();
             var watch = new Stopwatch();
             var times = new long[MAX_N, SAMPLES];
+            var fortune = new FortunesAlgorithm();
 
             var output = new PoolLinkedList<VEdge>();
     
@@ -34,7 +35,7 @@ namespace VoronoiSpeedTest
                     watch.Reset();
                     var points = GenPoints(numPoints, r);
                     watch.Start();
-                    FortunesAlgorithm.Run(points, output, 0, 0, WIDTH, HEIGHT);
+                    fortune.Run(points, output, 0, 0, WIDTH, HEIGHT);
                     watch.Stop();
                     output.Clear((edge) =>
                     {
