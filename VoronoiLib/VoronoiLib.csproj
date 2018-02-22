@@ -17,13 +17,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NETCore.Portable.Compatibility" Version="1.0.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="mscorlib">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5\mscorlib.dll</HintPath>
-    </Reference>
+    <PackageReference Update="NETStandard.Library" Version="1.6.1" />
   </ItemGroup>
 
 </Project>
